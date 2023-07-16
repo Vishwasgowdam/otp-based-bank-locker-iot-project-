@@ -1,0 +1,240 @@
+<pre>
+<font color="#95a5a6">&#47;************************************************************</font>
+<font color="#95a5a6"> &nbsp;Project: Biometric and OTP Based Security Locker</font>
+<font color="#95a5a6">************************************************************&#47;</font>
+
+<font color="#434f54">&#47;&#47; Libraries:</font>
+<font color="#5e6d03">#include</font> <font color="#434f54">&lt;</font><b><font color="#d35400">SoftwareSerial</font></b><font color="#434f54">.</font><font color="#000000">h</font><font color="#434f54">&gt;</font>
+<font color="#95a5a6">&#47;* Built-In Library *&#47;</font>
+
+<font color="#5e6d03">#include</font> <font color="#434f54">&lt;</font><b><font color="#d35400">Keypad</font></b><font color="#434f54">.</font><font color="#000000">h</font><font color="#434f54">&gt;</font>
+<font color="#95a5a6">&#47;* Install: Keypad by Mark Stanley, Alexander Brevig *&#47;</font>
+
+<font color="#5e6d03">#include</font><font color="#434f54">&lt;</font><font color="#d35400">Wire</font><font color="#434f54">.</font><font color="#000000">h</font><font color="#434f54">&gt;</font>
+<font color="#95a5a6">&#47;* Built-In Library *&#47;</font>
+
+<font color="#5e6d03">#include</font><font color="#434f54">&lt;</font><b><font color="#d35400">LiquidCrystal_I2C</font></b><font color="#434f54">.</font><font color="#000000">h</font><font color="#434f54">&gt;</font>
+<font color="#95a5a6">&#47;* Add Zip: </font><u><font color="#95a5a6">https:&#47;&#47;github.com&#47;fdebrabander&#47;Arduino-LiquidCrystal-I2C-library</font></u><font color="#95a5a6"> *&#47;</font>
+
+<font color="#95a5a6">&#47;* Install: &#34;Adafruit Fingerprint Sensor Library by Adafruit&#34; *&#47;</font>
+<font color="#5e6d03">#include</font> <font color="#434f54">&lt;</font><font color="#000000">Adafruit_Fingerprint</font><font color="#434f54">.</font><font color="#000000">h</font><font color="#434f54">&gt;</font>
+
+<font color="#434f54">&#47;&#47; Pin Numbers: Fingerprint Sensor</font>
+<font color="#5e6d03">#define</font> <font color="#000000">FP_Rx_Pin</font> <font color="#000000">9</font> &nbsp;&nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47;Connect to Tx of Fingerprint Sensor Module</font>
+<font color="#5e6d03">#define</font> <font color="#000000">FP_Tx_Pin</font> <font color="#000000">10</font> &nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47;Connect to Rx of Fingerprint Sensor Module</font>
+
+<font color="#434f54">&#47;&#47; Pin Numbers: Sim Module</font>
+<font color="#5e6d03">#define</font> <font color="#000000">Sim_Rx_Pin</font> <font color="#000000">11</font> &nbsp;&nbsp;<font color="#434f54">&#47;&#47; Connect to TX of SIM Module</font>
+<font color="#5e6d03">#define</font> <font color="#000000">Sim_Tx_Pin</font> <font color="#000000">12</font> &nbsp;&nbsp;<font color="#434f54">&#47;&#47; Connect to RX of SIM Module</font>
+
+<font color="#434f54">&#47;&#47; Pin Numbers: Buzzer Module</font>
+<font color="#5e6d03">#define</font> <font color="#000000">Buzzer_Pin</font> <font color="#000000">13</font> &nbsp;&nbsp;<font color="#434f54">&#47;&#47; Connect to the I&#47;O pin of Buzzer Module</font>
+
+<font color="#434f54">&#47;&#47; Pin Numbers: Relay Module</font>
+<font color="#5e6d03">#define</font> <font color="#000000">Relay_Pin</font> <font color="#000000">A0</font> &nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47; Connect to the IN pin of Relay Module</font>
+
+<font color="#434f54">&#47;&#47; Configurations: Buzzer Module (Low Level)</font>
+<font color="#5e6d03">#define</font> <font color="#000000">BuzzerOn</font> <font color="#00979c">LOW</font>
+<font color="#5e6d03">#define</font> <font color="#000000">BuzzerOff</font> <font color="#00979c">HIGH</font>
+
+<font color="#434f54">&#47;&#47; Configurations: LCD Display</font>
+<font color="#00979c">const</font> <font color="#00979c">uint8_t</font> <font color="#000000">I2C_Addr</font> <font color="#434f54">=</font> <font color="#000000">0x27</font><font color="#000000">;</font> &nbsp;<font color="#434f54">&#47;&#47; I2C Address</font>
+<font color="#00979c">const</font> <font color="#00979c">uint8_t</font> <font color="#000000">lcdNumCols</font> <font color="#434f54">=</font> <font color="#000000">16</font><font color="#000000">;</font> &nbsp;<font color="#434f54">&#47;&#47; LCD&#39;s number of columns</font>
+<font color="#00979c">const</font> <font color="#00979c">uint8_t</font> <font color="#000000">lcdNumRows</font> <font color="#434f54">=</font> <font color="#000000">2</font><font color="#000000">;</font> &nbsp;&nbsp;<font color="#434f54">&#47;&#47; LCD&#39;s number of rows</font>
+
+<font color="#434f54">&#47;&#47; Configurations: Keypad</font>
+<font color="#00979c">const</font> <font color="#00979c">byte</font> <font color="#000000">kpNumRows</font> <font color="#434f54">=</font> <font color="#000000">4</font><font color="#000000">;</font> &nbsp;<font color="#434f54">&#47;&#47; Keypad&#39;s number of rows</font>
+<font color="#00979c">const</font> <font color="#00979c">byte</font> <font color="#000000">kpNumCols</font> <font color="#434f54">=</font> <font color="#000000">3</font><font color="#000000">;</font> &nbsp;<font color="#434f54">&#47;&#47; Keypad&#39;s number of columns</font>
+<font color="#00979c">char</font> <font color="#000000">hexaKeys</font><font color="#000000">[</font><font color="#000000">kpNumRows</font><font color="#000000">]</font><font color="#000000">[</font><font color="#000000">kpNumCols</font><font color="#000000">]</font> <font color="#434f54">=</font> <font color="#000000">{</font>
+ &nbsp;<font color="#000000">{</font><font color="#00979c">&#39;1&#39;</font><font color="#434f54">,</font> <font color="#00979c">&#39;2&#39;</font><font color="#434f54">,</font> <font color="#00979c">&#39;3&#39;</font><font color="#000000">}</font><font color="#434f54">,</font>
+ &nbsp;<font color="#000000">{</font><font color="#00979c">&#39;4&#39;</font><font color="#434f54">,</font> <font color="#00979c">&#39;5&#39;</font><font color="#434f54">,</font> <font color="#00979c">&#39;6&#39;</font><font color="#000000">}</font><font color="#434f54">,</font>
+ &nbsp;<font color="#000000">{</font><font color="#00979c">&#39;7&#39;</font><font color="#434f54">,</font> <font color="#00979c">&#39;8&#39;</font><font color="#434f54">,</font> <font color="#00979c">&#39;9&#39;</font><font color="#000000">}</font><font color="#434f54">,</font>
+ &nbsp;<font color="#000000">{</font><font color="#00979c">&#39;*&#39;</font><font color="#434f54">,</font> <font color="#00979c">&#39;0&#39;</font><font color="#434f54">,</font> <font color="#00979c">&#39;#&#39;</font><font color="#000000">}</font>
+<font color="#000000">}</font><font color="#000000">;</font>
+
+<font color="#00979c">byte</font> <font color="#000000">rowPins</font><font color="#000000">[</font><font color="#000000">kpNumRows</font><font color="#000000">]</font> <font color="#434f54">=</font> <font color="#000000">{</font><font color="#000000">8</font><font color="#434f54">,</font> <font color="#000000">7</font><font color="#434f54">,</font> <font color="#000000">6</font><font color="#434f54">,</font> <font color="#000000">5</font><font color="#000000">}</font><font color="#000000">;</font> &nbsp;&nbsp;<font color="#434f54">&#47;&#47;R1, R2, R3, R4</font>
+<font color="#00979c">byte</font> <font color="#000000">colPins</font><font color="#000000">[</font><font color="#000000">kpNumCols</font><font color="#000000">]</font> <font color="#434f54">=</font> <font color="#000000">{</font><font color="#000000">4</font><font color="#434f54">,</font> <font color="#000000">3</font><font color="#434f54">,</font> <font color="#000000">2</font><font color="#000000">}</font><font color="#000000">;</font> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47;C1, C2, C3</font>
+
+<font color="#434f54">&#47;&#47; Configurations: Others</font>
+<font color="#00979c">const</font> <font color="#00979c">String</font> <font color="#000000">mobileNumber1</font> <font color="#434f54">=</font> <font color="#005c5f">&#34;8951263455&#34;</font><font color="#000000">;</font> &nbsp;&nbsp;<font color="#434f54">&#47;&#47;Replace xxxxxxxxxx with 10 digit mobile number </font>
+<font color="#00979c">const</font> <font color="#00979c">unsigned</font> <font color="#00979c">long</font> <font color="#000000">timeoutDuration</font> <font color="#434f54">=</font> <font color="#000000">30000</font><font color="#000000">;</font>
+<font color="#00979c">const</font> <font color="#00979c">unsigned</font> <font color="#00979c">long</font> <font color="#000000">relayOnDelay</font> <font color="#434f54">=</font> <font color="#000000">5000L</font><font color="#000000">;</font>
+<font color="#00979c">const</font> <font color="#00979c">int</font> <font color="#000000">otpLength</font> <font color="#434f54">=</font> <font color="#000000">5</font><font color="#000000">;</font>
+
+<font color="#434f54">&#47;&#47; Software Serial Port: Fingerprint Sensor</font>
+<b><font color="#d35400">SoftwareSerial</font></b> <font color="#000000">SerialFP</font><font color="#000000">(</font><font color="#000000">FP_Rx_Pin</font><font color="#434f54">,</font> <font color="#000000">FP_Tx_Pin</font><font color="#000000">)</font><font color="#000000">;</font>
+
+<font color="#434f54">&#47;&#47; Software Serial Port: Sim Module</font>
+<b><font color="#d35400">SoftwareSerial</font></b> <font color="#000000">SerialSIM</font><font color="#000000">(</font><font color="#000000">Sim_Rx_Pin</font><font color="#434f54">,</font> <font color="#000000">Sim_Tx_Pin</font><font color="#000000">)</font><font color="#000000">;</font>
+
+<font color="#434f54">&#47;&#47; Objects: Fingerprint Sensor</font>
+<font color="#000000">Adafruit_Fingerprint</font> <font color="#000000">objFP</font> <font color="#434f54">=</font> <font color="#000000">Adafruit_Fingerprint</font><font color="#000000">(</font><font color="#434f54">&amp;</font><font color="#000000">SerialFP</font><font color="#000000">)</font><font color="#000000">;</font>
+
+<font color="#434f54">&#47;&#47; Objects: LCD Display</font>
+<b><font color="#d35400">LiquidCrystal_I2C</font></b> <font color="#000000">lcd</font><font color="#000000">(</font><font color="#000000">I2C_Addr</font><font color="#434f54">,</font> <font color="#000000">lcdNumCols</font><font color="#434f54">,</font> <font color="#000000">lcdNumRows</font><font color="#000000">)</font><font color="#000000">;</font> &nbsp;<font color="#434f54">&#47;&#47;0x3F &#47; 0x27</font>
+
+<font color="#434f54">&#47;&#47; Objects: Keypad</font>
+<b><font color="#d35400">Keypad</font></b> <font color="#000000">kp</font> <font color="#434f54">=</font> <b><font color="#d35400">Keypad</font></b><font color="#000000">(</font><font color="#d35400">makeKeymap</font><font color="#000000">(</font><font color="#000000">hexaKeys</font><font color="#000000">)</font><font color="#434f54">,</font> <font color="#000000">rowPins</font><font color="#434f54">,</font> <font color="#000000">colPins</font><font color="#434f54">,</font> <font color="#000000">kpNumRows</font><font color="#434f54">,</font> <font color="#000000">kpNumCols</font><font color="#000000">)</font><font color="#000000">;</font>
+
+<font color="#434f54">&#47;&#47; Variables:</font>
+<font color="#00979c">String</font> <font color="#000000">OTP</font><font color="#000000">;</font>
+<font color="#00979c">bool</font> <font color="#000000">flagTimeout</font><font color="#000000">;</font>
+<font color="#00979c">unsigned</font> <font color="#00979c">long</font> <font color="#000000">millisB4Entry</font><font color="#000000">;</font>
+<font color="#00979c">unsigned</font> <font color="#00979c">long</font> <font color="#000000">elapsedTime</font><font color="#000000">;</font>
+
+<font color="#00979c">void</font> <font color="#5e6d03">setup</font><font color="#000000">(</font><font color="#000000">)</font> <font color="#000000">{</font>
+ &nbsp;<font color="#434f54">&#47;&#47; Pin Configurations:</font>
+ &nbsp;<font color="#d35400">pinMode</font><font color="#000000">(</font><font color="#000000">Relay_Pin</font><font color="#434f54">,</font> <font color="#00979c">OUTPUT</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#d35400">digitalWrite</font><font color="#000000">(</font><font color="#000000">Relay_Pin</font><font color="#434f54">,</font> <font color="#00979c">LOW</font><font color="#000000">)</font><font color="#000000">;</font>
+
+ &nbsp;<font color="#d35400">pinMode</font><font color="#000000">(</font><font color="#000000">Buzzer_Pin</font><font color="#434f54">,</font> <font color="#00979c">OUTPUT</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#d35400">digitalWrite</font><font color="#000000">(</font><font color="#000000">Buzzer_Pin</font><font color="#434f54">,</font> <font color="#000000">BuzzerOff</font><font color="#000000">)</font><font color="#000000">;</font>
+
+ &nbsp;<font color="#d35400">randomSeed</font><font color="#000000">(</font><font color="#d35400">analogRead</font><font color="#000000">(</font><font color="#000000">1</font><font color="#000000">)</font><font color="#000000">)</font><font color="#000000">;</font>
+
+ &nbsp;<font color="#434f54">&#47;&#47; Initialise the LCD display:</font>
+ &nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">begin</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">backlight</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font> &nbsp;<font color="#434f54">&#47;&#47; turn on backlight.</font>
+
+ &nbsp;<font color="#95a5a6">&#47;* Begin serial communication with Arduino and Fingerprint sensor *&#47;</font>
+ &nbsp;<font color="#000000">objFP</font><font color="#434f54">.</font><font color="#d35400">begin</font><font color="#000000">(</font><font color="#000000">57600</font><font color="#000000">)</font><font color="#000000">;</font>
+
+ &nbsp;<font color="#5e6d03">if</font> <font color="#000000">(</font><font color="#434f54">!</font><font color="#000000">objFP</font><font color="#434f54">.</font><font color="#000000">verifyPassword</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">)</font> <font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">clear</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">setCursor</font><font color="#000000">(</font><font color="#000000">0</font><font color="#434f54">,</font> <font color="#000000">0</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">print</font><font color="#000000">(</font><font color="#005c5f">&#34;Did not find FP &#34;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">setCursor</font><font color="#000000">(</font><font color="#000000">0</font><font color="#434f54">,</font> <font color="#000000">1</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">print</font><font color="#000000">(</font><font color="#005c5f">&#34;sensor :( &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#34;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#5e6d03">while</font> <font color="#000000">(</font><font color="#00979c">true</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">}</font>
+
+ &nbsp;<font color="#95a5a6">&#47;* Begin serial communication with Arduino and SIM Module *&#47;</font>
+ &nbsp;<font color="#000000">SerialSIM</font><font color="#434f54">.</font><font color="#d35400">begin</font><font color="#000000">(</font><font color="#000000">9600</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#d35400">delay</font><font color="#000000">(</font><font color="#000000">500</font><font color="#000000">)</font><font color="#000000">;</font>
+<font color="#000000">}</font>
+
+<font color="#00979c">void</font> <font color="#5e6d03">loop</font><font color="#000000">(</font><font color="#000000">)</font> <font color="#000000">{</font>
+ &nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">clear</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">setCursor</font><font color="#000000">(</font><font color="#000000">0</font><font color="#434f54">,</font> <font color="#000000">0</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">print</font><font color="#000000">(</font><font color="#005c5f">&#34;Fingerprint &nbsp;&nbsp;&nbsp;&nbsp;&#34;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">setCursor</font><font color="#000000">(</font><font color="#000000">0</font><font color="#434f54">,</font> <font color="#000000">1</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">print</font><font color="#000000">(</font><font color="#005c5f">&#34;Authentication &nbsp;&#34;</font><font color="#000000">)</font><font color="#000000">;</font>
+
+ &nbsp;<font color="#5e6d03">if</font> <font color="#000000">(</font><font color="#000000">isValidFingerprintDetected</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">)</font> <font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">Buzzer</font><font color="#000000">(</font><font color="#000000">1</font><font color="#434f54">,</font> <font color="#000000">100</font><font color="#434f54">,</font> <font color="#000000">0</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">clear</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">setCursor</font><font color="#000000">(</font><font color="#000000">0</font><font color="#434f54">,</font> <font color="#000000">0</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">print</font><font color="#000000">(</font><font color="#005c5f">&#34;Sending OTP... &nbsp;&#34;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">OTP</font> <font color="#434f54">=</font> <font color="#00979c">String</font><font color="#000000">(</font><font color="#d35400">random</font><font color="#000000">(</font><font color="#000000">11111</font><font color="#434f54">,</font> <font color="#000000">99999</font><font color="#000000">)</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#00979c">String</font> <font color="#000000">msgContent</font> <font color="#434f54">=</font> <font color="#005c5f">&#34;OTP to unlock your security locker is &#34;</font> <font color="#434f54">+</font> <font color="#000000">OTP</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">SendMessage</font><font color="#000000">(</font><font color="#000000">mobileNumber1</font><font color="#434f54">,</font> <font color="#000000">msgContent</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">millisB4Entry</font> <font color="#434f54">=</font> <font color="#d35400">millis</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">OTP_Authentication</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">}</font> <font color="#5e6d03">else</font> <font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">setCursor</font><font color="#000000">(</font><font color="#000000">0</font><font color="#434f54">,</font> <font color="#000000">0</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">print</font><font color="#000000">(</font><font color="#005c5f">&#34;Invalid&#47;Reading &#34;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">setCursor</font><font color="#000000">(</font><font color="#000000">0</font><font color="#434f54">,</font> <font color="#000000">1</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">print</font><font color="#000000">(</font><font color="#005c5f">&#34;Failed! &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#34;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">Buzzer</font><font color="#000000">(</font><font color="#000000">3</font><font color="#434f54">,</font> <font color="#000000">250</font><font color="#434f54">,</font> <font color="#000000">250</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">}</font>
+<font color="#000000">}</font>
+
+<font color="#00979c">void</font> <font color="#000000">SendMessage</font><font color="#000000">(</font><font color="#00979c">String</font> <font color="#000000">mobileNumber</font><font color="#434f54">,</font> <font color="#00979c">String</font> <font color="#000000">msgContent</font><font color="#000000">)</font> <font color="#000000">{</font>
+ &nbsp;<font color="#000000">SerialSIM</font><font color="#434f54">.</font><font color="#d35400">listen</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#5e6d03">while</font> <font color="#000000">(</font><font color="#434f54">!</font><font color="#000000">SerialSIM</font><font color="#434f54">.</font><font color="#d35400">isListening</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">)</font><font color="#000000">;</font>
+
+ &nbsp;<font color="#95a5a6">&#47;* Sets the GSM Module to Text Mode *&#47;</font>
+ &nbsp;<font color="#000000">SerialSIM</font><font color="#434f54">.</font><font color="#d35400">print</font><font color="#000000">(</font><font color="#005c5f">&#34;AT+CMGF=1\r&#34;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#d35400">delay</font><font color="#000000">(</font><font color="#000000">1000</font><font color="#000000">)</font><font color="#000000">;</font>
+
+ &nbsp;<font color="#95a5a6">&#47;* Sets how the modem will response when a SMS is received *&#47;</font>
+ &nbsp;<font color="#000000">SerialSIM</font><font color="#434f54">.</font><font color="#d35400">println</font><font color="#000000">(</font><font color="#005c5f">&#34;AT+CNMI=1,2,0,0,0&#34;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#d35400">delay</font><font color="#000000">(</font><font color="#000000">1000</font><font color="#000000">)</font><font color="#000000">;</font>
+
+ &nbsp;<font color="#00979c">String</font> <font color="#000000">cmdSetMobileNumber</font> <font color="#434f54">=</font> <font color="#005c5f">&#34;AT+CMGS=\&#34;+91&#34;</font> <font color="#434f54">+</font> <font color="#000000">mobileNumber</font> <font color="#434f54">+</font> <font color="#005c5f">&#34;\&#34;\r&#34;</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">SerialSIM</font><font color="#434f54">.</font><font color="#d35400">print</font><font color="#000000">(</font><font color="#000000">cmdSetMobileNumber</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#d35400">delay</font><font color="#000000">(</font><font color="#000000">500</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">SerialSIM</font><font color="#434f54">.</font><font color="#d35400">print</font><font color="#000000">(</font><font color="#000000">msgContent</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">SerialSIM</font><font color="#434f54">.</font><font color="#d35400">write</font><font color="#000000">(</font><font color="#000000">26</font><font color="#000000">)</font><font color="#000000">;</font> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#434f54">&#47;&#47; ASCII code of CTRL+Z</font>
+ &nbsp;<font color="#d35400">delay</font><font color="#000000">(</font><font color="#000000">500</font><font color="#000000">)</font><font color="#000000">;</font>
+<font color="#000000">}</font>
+
+<font color="#00979c">void</font> <font color="#000000">OTP_Authentication</font><font color="#000000">(</font><font color="#000000">)</font> <font color="#000000">{</font>
+ &nbsp;<font color="#00979c">bool</font> <font color="#000000">flag</font> <font color="#434f54">=</font> <font color="#00979c">true</font><font color="#000000">;</font>
+ &nbsp;<font color="#5e6d03">while</font> <font color="#000000">(</font><font color="#000000">flag</font><font color="#000000">)</font> <font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">clear</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">print</font><font color="#000000">(</font><font color="#005c5f">&#34;OTP: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#34;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">setCursor</font><font color="#000000">(</font><font color="#000000">0</font><font color="#434f54">,</font> <font color="#000000">1</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">print</font><font color="#000000">(</font><font color="#005c5f">&#34;*:Clear &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#34;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#00979c">String</font> <font color="#000000">inputPIN</font> <font color="#434f54">=</font> <font color="#000000">KeypadInput_Digits</font><font color="#000000">(</font><font color="#000000">otpLength</font><font color="#434f54">,</font> <font color="#000000">5</font><font color="#434f54">,</font> <font color="#000000">0</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">clear</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#5e6d03">if</font> <font color="#000000">(</font><font color="#000000">inputPIN</font> <font color="#434f54">==</font> <font color="#000000">OTP</font><font color="#000000">)</font> <font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">Buzzer</font><font color="#000000">(</font><font color="#000000">1</font><font color="#434f54">,</font> <font color="#000000">100</font><font color="#434f54">,</font> <font color="#000000">0</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">print</font><font color="#000000">(</font><font color="#005c5f">&#34;UNLOCKED! &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#34;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#d35400">digitalWrite</font><font color="#000000">(</font><font color="#000000">Relay_Pin</font><font color="#434f54">,</font> <font color="#00979c">HIGH</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#d35400">delay</font><font color="#000000">(</font><font color="#000000">relayOnDelay</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">Buzzer</font><font color="#000000">(</font><font color="#000000">3</font><font color="#434f54">,</font> <font color="#000000">100</font><font color="#434f54">,</font> <font color="#000000">100</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#d35400">delay</font><font color="#000000">(</font><font color="#000000">1000</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#d35400">digitalWrite</font><font color="#000000">(</font><font color="#000000">Relay_Pin</font><font color="#434f54">,</font> <font color="#00979c">LOW</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">flag</font> <font color="#434f54">=</font> <font color="#00979c">false</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">}</font> <font color="#5e6d03">else</font> <font color="#5e6d03">if</font> <font color="#000000">(</font><font color="#000000">flagTimeout</font> <font color="#434f54">==</font> <font color="#00979c">false</font><font color="#000000">)</font> <font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">clear</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">setCursor</font><font color="#000000">(</font><font color="#000000">0</font><font color="#434f54">,</font> <font color="#000000">0</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">print</font><font color="#000000">(</font><font color="#005c5f">&#34;Timeout!&#34;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">Buzzer</font><font color="#000000">(</font><font color="#000000">3</font><font color="#434f54">,</font> <font color="#000000">250</font><font color="#434f54">,</font> <font color="#000000">250</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">flag</font> <font color="#434f54">=</font> <font color="#00979c">false</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">}</font> <font color="#5e6d03">else</font> <font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">print</font><font color="#000000">(</font><font color="#005c5f">&#34;Invalid OTP! &nbsp;&nbsp;&nbsp;&#34;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">Buzzer</font><font color="#000000">(</font><font color="#000000">1</font><font color="#434f54">,</font> <font color="#000000">800</font><font color="#434f54">,</font> <font color="#000000">0</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">}</font>
+ &nbsp;<font color="#000000">}</font>
+<font color="#000000">}</font>
+
+<font color="#00979c">String</font> <font color="#000000">KeypadInput_Digits</font><font color="#000000">(</font><font color="#00979c">int</font> <font color="#000000">numDigits</font><font color="#434f54">,</font> <font color="#00979c">int</font> <font color="#000000">colIdx</font><font color="#434f54">,</font> <font color="#00979c">int</font> <font color="#000000">rowIdx</font><font color="#000000">)</font> <font color="#000000">{</font>
+ &nbsp;<font color="#00979c">String</font> <font color="#000000">keyStr</font> <font color="#434f54">=</font> <font color="#005c5f">&#34;&#34;</font><font color="#000000">;</font>
+ &nbsp;<font color="#00979c">char</font> <font color="#000000">keyChar</font> <font color="#434f54">=</font> <font color="#00979c">&#39;\0&#39;</font><font color="#000000">;</font>
+
+ &nbsp;<font color="#000000">flagTimeout</font> <font color="#434f54">=</font> <font color="#00979c">true</font><font color="#000000">;</font>
+ &nbsp;<font color="#00979c">bool</font> <font color="#000000">isFirst</font> <font color="#434f54">=</font> <font color="#00979c">true</font><font color="#000000">;</font>
+ &nbsp;<font color="#5e6d03">while</font> <font color="#000000">(</font><font color="#000000">keyStr</font><font color="#434f54">.</font><font color="#d35400">length</font><font color="#000000">(</font><font color="#000000">)</font> <font color="#434f54">&lt;</font> <font color="#000000">numDigits</font> <font color="#434f54">&amp;&amp;</font> <font color="#000000">flagTimeout</font><font color="#000000">)</font> <font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">elapsedTime</font> <font color="#434f54">=</font> <font color="#d35400">millis</font><font color="#000000">(</font><font color="#000000">)</font> <font color="#434f54">-</font> <font color="#000000">millisB4Entry</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">flagTimeout</font> <font color="#434f54">=</font> <font color="#000000">elapsedTime</font> <font color="#434f54">&lt;=</font> <font color="#000000">timeoutDuration</font><font color="#000000">;</font>
+
+ &nbsp;&nbsp;&nbsp;<font color="#000000">keyChar</font> <font color="#434f54">=</font> <font color="#000000">kp</font><font color="#434f54">.</font><font color="#d35400">getKey</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#5e6d03">if</font> <font color="#000000">(</font><font color="#000000">isFirst</font> <font color="#434f54">||</font> <font color="#000000">keyChar</font> <font color="#434f54">==</font> <font color="#00979c">&#39;*&#39;</font><font color="#000000">)</font> <font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">keyStr</font> <font color="#434f54">=</font> <font color="#005c5f">&#34;&#34;</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">setCursor</font><font color="#000000">(</font><font color="#000000">colIdx</font><font color="#434f54">,</font> <font color="#000000">rowIdx</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#5e6d03">for</font> <font color="#000000">(</font><font color="#00979c">int</font> <font color="#000000">i</font> <font color="#434f54">=</font> <font color="#000000">0</font><font color="#000000">;</font> <font color="#000000">i</font> <font color="#434f54">&lt;</font> <font color="#000000">numDigits</font><font color="#000000">;</font> <font color="#000000">i</font><font color="#434f54">++</font><font color="#000000">)</font> <font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">print</font><font color="#000000">(</font><font color="#005c5f">&#34; &#34;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">}</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">setCursor</font><font color="#000000">(</font><font color="#000000">colIdx</font><font color="#434f54">,</font> <font color="#000000">rowIdx</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">blink</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">isFirst</font> <font color="#434f54">=</font> <font color="#00979c">false</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">}</font> <font color="#5e6d03">else</font> <font color="#5e6d03">if</font> <font color="#000000">(</font><font color="#000000">keyChar</font><font color="#000000">)</font> <font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">print</font><font color="#000000">(</font><font color="#005c5f">&#34;*&#34;</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#000000">keyStr</font> <font color="#434f54">+=</font> <font color="#000000">keyChar</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#000000">}</font>
+ &nbsp;<font color="#000000">}</font>
+ &nbsp;<font color="#000000">lcd</font><font color="#434f54">.</font><font color="#d35400">noBlink</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#5e6d03">return</font> <font color="#000000">keyStr</font><font color="#000000">;</font>
+<font color="#000000">}</font>
+
+<font color="#00979c">bool</font> <font color="#000000">isValidFingerprintDetected</font><font color="#000000">(</font><font color="#000000">)</font> <font color="#000000">{</font>
+ &nbsp;<font color="#000000">SerialFP</font><font color="#434f54">.</font><font color="#d35400">listen</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#5e6d03">while</font> <font color="#000000">(</font><font color="#434f54">!</font><font color="#000000">SerialFP</font><font color="#434f54">.</font><font color="#d35400">isListening</font><font color="#000000">(</font><font color="#000000">)</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#5e6d03">while</font> <font color="#000000">(</font><font color="#000000">objFP</font><font color="#434f54">.</font><font color="#000000">getImage</font><font color="#000000">(</font><font color="#000000">)</font> <font color="#434f54">!=</font> <font color="#000000">FINGERPRINT_OK</font><font color="#000000">)</font><font color="#000000">;</font> <font color="#95a5a6">&#47;* Loop until the image is taken. *&#47;</font>
+ &nbsp;<font color="#5e6d03">if</font> <font color="#000000">(</font><font color="#000000">objFP</font><font color="#434f54">.</font><font color="#000000">image2Tz</font><font color="#000000">(</font><font color="#000000">)</font> <font color="#434f54">!=</font> <font color="#000000">FINGERPRINT_OK</font><font color="#000000">)</font> <font color="#5e6d03">return</font> <font color="#00979c">false</font><font color="#000000">;</font>
+ &nbsp;<font color="#5e6d03">if</font> <font color="#000000">(</font><font color="#000000">objFP</font><font color="#434f54">.</font><font color="#000000">fingerFastSearch</font><font color="#000000">(</font><font color="#000000">)</font> <font color="#434f54">!=</font> <font color="#000000">FINGERPRINT_OK</font><font color="#000000">)</font> &nbsp;<font color="#5e6d03">return</font> <font color="#00979c">false</font><font color="#000000">;</font>
+ &nbsp;<font color="#5e6d03">return</font> <font color="#00979c">true</font><font color="#000000">;</font>
+<font color="#000000">}</font>
+
+<font color="#00979c">void</font> <font color="#000000">Buzzer</font><font color="#000000">(</font><font color="#00979c">int</font> <font color="#000000">n</font><font color="#434f54">,</font> <font color="#00979c">int</font> <font color="#000000">onDelay</font><font color="#434f54">,</font> <font color="#00979c">int</font> <font color="#000000">offDelay</font><font color="#000000">)</font> <font color="#000000">{</font>
+ &nbsp;<font color="#5e6d03">for</font> <font color="#000000">(</font><font color="#00979c">int</font> <font color="#000000">i</font> <font color="#434f54">=</font> <font color="#000000">1</font><font color="#000000">;</font> <font color="#000000">i</font> <font color="#434f54">&lt;=</font> <font color="#000000">n</font><font color="#000000">;</font> <font color="#000000">i</font><font color="#434f54">++</font><font color="#000000">)</font> <font color="#000000">{</font>
+ &nbsp;&nbsp;&nbsp;<font color="#d35400">digitalWrite</font><font color="#000000">(</font><font color="#000000">Buzzer_Pin</font><font color="#434f54">,</font> <font color="#000000">BuzzerOn</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#d35400">delay</font><font color="#000000">(</font><font color="#000000">onDelay</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#d35400">digitalWrite</font><font color="#000000">(</font><font color="#000000">Buzzer_Pin</font><font color="#434f54">,</font> <font color="#000000">BuzzerOff</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;&nbsp;&nbsp;<font color="#d35400">delay</font><font color="#000000">(</font><font color="#000000">offDelay</font><font color="#000000">)</font><font color="#000000">;</font>
+ &nbsp;<font color="#000000">}</font>
+<font color="#000000">}</font>
+
+</pre>
